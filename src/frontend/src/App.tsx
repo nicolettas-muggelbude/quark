@@ -16,7 +16,7 @@ export default function App() {
       </header>
 
       {/* Main */}
-      <main className="flex flex-1 gap-6 p-6">
+      <main className="flex flex-1 gap-6 p-10 pt-8">
         {/* Linke Spalte: Einstellungen */}
         <div className="flex flex-col gap-4 w-80 shrink-0">
           <UrlInput url={url} onChange={setUrl} />
