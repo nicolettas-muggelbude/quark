@@ -13,7 +13,7 @@ export default function AboutDialog({ onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 mb-6">
-          <span className="text-4xl">🐸</span>
+          <img src="/quark-frog.svg" alt="Quark" className="w-12 h-12" />
           <div>
             <h2 className="text-xl font-semibold text-white">Quark</h2>
             <p className="text-xs text-gray-500">QR-Code-Generator v0.1</p>

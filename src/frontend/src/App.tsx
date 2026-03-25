@@ -12,7 +12,7 @@ export default function App() {
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
       {/* Header */}
       <header className="flex items-center gap-3 px-6 py-4 border-b border-gray-800">
-        <span className="text-2xl select-none">🐸</span>
+        <img src="/quark-frog.svg" alt="Quark" className="w-8 h-8 select-none" />
         <span className="text-xl font-semibold tracking-tight text-white">Quark</span>
         <span className="text-xs text-gray-500 ml-1 mt-1">QR-Generator</span>
         <div className="ml-auto">
