@@ -1,6 +1,6 @@
 # Quark — QR-Code-Generator
 
-![Quark Logo](src/frontend/public/quark-frog.svg)
+<img src="src/frontend/public/quark-frog.svg" width="80" alt="Quark Logo" />
 
 Quark ist ein kostenloser, werbefreier QR-Code-Generator als Desktop-App für Linux und Windows.
 
