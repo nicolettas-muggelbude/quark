@@ -79,8 +79,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          BASE="${GITHUB_WORKSPACE}/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage"
-          APPIMAGE=$(find "$BASE" -name "*.AppImage" | head -1)
+          echo "=== AppImage suchen ==="
+          find "${GITHUB_WORKSPACE}/src-tauri/target" -name "*.AppImage" 2>/dev/null || echo "(keine AppImage gefunden)"
+          APPIMAGE=$(find "${GITHUB_WORKSPACE}/src-tauri/target" -name "*.AppImage" 2>/dev/null | head -1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "Fehler: Kein AppImage gefunden"
+            exit 1
+          fi
           echo "AppImage gefunden: $APPIMAGE"
           SQUASH="${GITHUB_WORKSPACE}/squashfs-root"
 
