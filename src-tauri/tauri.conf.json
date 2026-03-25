@@ -15,6 +15,14 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/nicolettas-muggelbude/quark/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhEMjY3OTM2N0U5QUNFN0UKUldSK3pwcCtObmttald4Q0FpSWdCT1B5VGhHUC8vbHRvazYzYUZ5bklEOG1IYzVaYmV2QWVGRGUK"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["appimage", "nsis"],

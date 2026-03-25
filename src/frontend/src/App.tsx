@@ -2,11 +2,14 @@ import QrPreview from './components/QrPreview'
 import UrlInput from './components/UrlInput'
 import ExportPanel from './components/ExportPanel'
 import AboutDialog from './components/AboutDialog'
+import UpdateBanner from './components/UpdateBanner'
+import { useUpdater } from './hooks/useUpdater'
 import { useState } from 'react'
 
 export default function App() {
   const [url, setUrl] = useState('')
   const [showAbout, setShowAbout] = useState(false)
+  const updateState = useUpdater()
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
@@ -24,6 +27,8 @@ export default function App() {
           </button>
         </div>
       </header>
+
+      <UpdateBanner state={updateState} />
 
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
 
