@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+src/frontend/node_modules/
+
+# Build outputs
+src/frontend/dist/
+src-tauri/target/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Tauri generated
+src-tauri/gen/
+
+# Env
+.env
+.env.local

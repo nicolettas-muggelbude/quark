@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "frontend:dev": "cd src/frontend && npm run dev",
+    "frontend:build": "cd src/frontend && npm run build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
