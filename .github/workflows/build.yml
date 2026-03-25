@@ -113,4 +113,8 @@ jobs:
           cp "$APPIMAGE" "$APPIMAGE_NOVERSION"
           gh release upload "${{ github.ref_name }}" "$APPIMAGE_NOVERSION" --clobber
 
+          # Desktop-Integrations-Skript hochladen
+          gh release upload "${{ github.ref_name }}" \
+            "${GITHUB_WORKSPACE}/scripts/install-linux.sh" --clobber
+
           rm -rf "$SQUASH"
