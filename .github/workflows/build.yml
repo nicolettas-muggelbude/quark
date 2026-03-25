@@ -79,10 +79,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          V="${{ github.ref_name }}"
-          V="${V#v}"
           BASE="${GITHUB_WORKSPACE}/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage"
-          APPIMAGE="$BASE/Quark_${V}_amd64.AppImage"
+          APPIMAGE=$(find "$BASE" -name "*.AppImage" | head -1)
+          echo "AppImage gefunden: $APPIMAGE"
           SQUASH="${GITHUB_WORKSPACE}/squashfs-root"
 
           chmod +x "$APPIMAGE"
