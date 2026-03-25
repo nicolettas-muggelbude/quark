@@ -105,4 +105,10 @@ jobs:
           echo "AppImage neu gepackt: $(du -sh "$APPIMAGE" | cut -f1)"
 
           gh release upload "${{ github.ref_name }}" "$APPIMAGE" --clobber
+
+          # Versions-loses AppImage für stabilen Download-Link
+          APPIMAGE_NOVERSION="$(dirname "$APPIMAGE")/Quark_amd64.AppImage"
+          cp "$APPIMAGE" "$APPIMAGE_NOVERSION"
+          gh release upload "${{ github.ref_name }}" "$APPIMAGE_NOVERSION" --clobber
+
           rm -rf "$SQUASH"
