@@ -15,14 +15,14 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            // Linux: WebKit EGL-Fix (identisch zu RechnungsFee)
             #[cfg(target_os = "linux")]
             {
                 use webkit2gtk::{WebContext, WebContextExt};
                 if let Some(ctx) = WebContext::default() {
                     ctx.set_sandbox_enabled(false);
                 }
-                std::env::set_var("GDK_BACKEND", "x11");
+                // GDK_BACKEND=x11 und WAYLAND_DISPLAY-Remove sind in main.rs
+                // (müssen vor GTK-Init gesetzt sein, nicht erst hier in setup())
                 std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
                 log::info!("WebKit-EGL-Fix aktiviert");
             }

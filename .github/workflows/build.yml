@@ -66,3 +66,37 @@ jobs:
             Quark QR-Generator ${{ github.ref_name }}
           releaseDraft: false
           prerelease: false
+
+      # ── AppImage: gebündelte Bibliotheken entfernen ──────────────────────────
+      # Problem: linuxdeploy bündelt webkit2gtk + GStreamer aus Ubuntu 22.04.
+      # Auf neueren Distros (Fedora, Bazzite, Arch) kollidieren diese mit den
+      # System-Bibliotheken → Absturz.
+      # Fix: usr/lib/ komplett entfernen → System-Bibliotheken werden verwendet.
+      - name: AppImage Bibliotheken entbündeln (Linux)
+        if: matrix.platform == 'ubuntu-22.04'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="${{ github.ref_name }}"
+          V="${V#v}"
+          BASE="${GITHUB_WORKSPACE}/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage"
+          APPIMAGE="$BASE/Quark_${V}_amd64.AppImage"
+          SQUASH="${GITHUB_WORKSPACE}/squashfs-root"
+
+          chmod +x "$APPIMAGE"
+          "$APPIMAGE" --appimage-extract
+
+          echo "=== usr/lib vor dem Entfernen ==="
+          du -sh "$SQUASH/usr/lib/" 2>/dev/null || echo "(leer)"
+
+          rm -rf "$SQUASH/usr/lib/"
+          echo "=== usr/lib/ entfernt – System-Bibliotheken werden verwendet ==="
+
+          wget -qO /tmp/appimagetool \
+            "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
+          chmod +x /tmp/appimagetool
+          ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run "$SQUASH" "$APPIMAGE"
+          echo "AppImage neu gepackt: $(du -sh "$APPIMAGE" | cut -f1)"
+
+          gh release upload "${{ github.ref_name }}" "$APPIMAGE" --clobber
+          rm -rf "$SQUASH"

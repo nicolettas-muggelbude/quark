@@ -2,5 +2,20 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    quark_lib::run()
+    // Linux: GDK_BACKEND + WAYLAND_DISPLAY MÜSSEN vor GTK-Init gesetzt sein.
+    // WebKitWebProcess initialisiert EGL bedingungslos beim Start – BEVOR
+    // WEBKIT_DISABLE_DMABUF_RENDERER oder andere Flags greifen.
+    //
+    // Mesa wählt den EGL-Pfad anhand von Env-Vars:
+    //   WAYLAND_DISPLAY gesetzt → Wayland-EGL  ← buggy auf AMD + Mesa 26
+    //   WAYLAND_DISPLAY fehlt  → X11-EGL via DISPLAY=:0 ← funktioniert
+    //
+    // KDE Plasma hat immer XWayland → DISPLAY=:0 ist gesetzt.
+    #[cfg(target_os = "linux")]
+    {
+        std::env::set_var("GDK_BACKEND", "x11");
+        std::env::remove_var("WAYLAND_DISPLAY");
+    }
+
+    quark_lib::run();
 }
