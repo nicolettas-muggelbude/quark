@@ -143,12 +143,21 @@ jobs:
           name: linux-sig
           path: ${{ env.APPIMAGE_SIG }}
 
+      - name: Windows-Signatur vorbereiten
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $sig = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe.sig" | Select-Object -First 1
+          New-Item -ItemType Directory -Force -Path "sig-out" | Out-Null
+          Copy-Item $sig.FullName "sig-out/quark-windows.exe.sig"
+          Write-Host "Signatur gefunden: $($sig.FullName)"
+
       - name: Windows-Signatur als Artifact hochladen
         if: matrix.platform == 'windows-latest'
         uses: actions/upload-artifact@v4
         with:
           name: windows-sig
-          path: src-tauri/target/release/bundle/nsis/*.exe.sig
+          path: sig-out/quark-windows.exe.sig
 
   # ── latest.json aus beiden Plattform-Signaturen zusammenbauen ───────────────
   publish:
