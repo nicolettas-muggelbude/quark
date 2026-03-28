@@ -211,11 +211,11 @@ jobs:
       - name: latest.json generieren und hochladen
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
         run: |
-          TAG="${{ github.ref_name }}"
-          VERSION="${TAG#v}"
-          REPO="${{ github.repository }}"
-          BASE="https://github.com/${REPO}/releases/download/${TAG}"
+          export VERSION="${TAG#v}"
+          export BASE="https://github.com/${REPO}/releases/download/${TAG}"
 
           python3 << PYEOF
           import json, os, base64, datetime
