@@ -2,7 +2,7 @@ import { useState } from 'react'
 import QRCodeStyling from 'qr-code-styling'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
-import { downloadDir } from '@tauri-apps/api/path'
+import { downloadDir, join } from '@tauri-apps/api/path'
 
 interface Props {
   url: string
@@ -14,10 +14,12 @@ const SIZES = [256, 512, 1024] as const
 export default function ExportPanel({ url, disabled }: Props) {
   const [size, setSize] = useState<(typeof SIZES)[number]>(512)
   const [exporting, setExporting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleExport() {
     if (disabled) return
     setExporting(true)
+    setError(null)
     try {
       const qr = new QRCodeStyling({
         width: size,
@@ -30,17 +32,20 @@ export default function ExportPanel({ url, disabled }: Props) {
       })
 
       const blob = await qr.getRawData('png')
-      if (!blob) return
+      if (!blob) throw new Error('QR-Daten konnten nicht generiert werden')
 
       const downloads = await downloadDir()
+      const defaultPath = await join(downloads, 'quark-qr.png')
       const path = await save({
-        defaultPath: `${downloads}/quark-qr.png`,
+        defaultPath,
         filters: [{ name: 'PNG', extensions: ['png'] }],
       })
       if (!path) return
 
       const buffer = await (blob as Blob).arrayBuffer()
       await writeFile(path, new Uint8Array(buffer))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setExporting(false)
     }
@@ -76,6 +81,10 @@ export default function ExportPanel({ url, disabled }: Props) {
       >
         {exporting ? 'Exportiere…' : 'PNG exportieren'}
       </button>
+
+      {error && (
+        <p className="text-xs text-red-400 break-all">{error}</p>
+      )}
     </div>
   )
 }

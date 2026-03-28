@@ -237,7 +237,7 @@ Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 $APPIMAGE %u
 Icon=de.quark.app
 Type=Application
 Categories=Graphics;Utility;
-StartupWMClass=de.quark.app
+StartupWMClass=Quark
 Keywords=QR;QR-Code;Barcode;Generator;
 Terminal=false
 DESKTOP
