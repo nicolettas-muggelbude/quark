@@ -9,6 +9,11 @@
     "updater:default",
     "process:default",
     "dialog:default",
-    "fs:default"
+    "fs:default",
+    "fs:allow-write",
+    "fs:scope-home-recursive",
+    "fs:scope-download-recursive",
+    "fs:scope-document-recursive",
+    "fs:scope-desktop-recursive"
   ]
 }

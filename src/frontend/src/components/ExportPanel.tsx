@@ -2,6 +2,7 @@ import { useState } from 'react'
 import QRCodeStyling from 'qr-code-styling'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
+import { downloadDir } from '@tauri-apps/api/path'
 
 interface Props {
   url: string
@@ -31,8 +32,9 @@ export default function ExportPanel({ url, disabled }: Props) {
       const blob = await qr.getRawData('png')
       if (!blob) return
 
+      const downloads = await downloadDir()
       const path = await save({
-        defaultPath: 'quark-qr.png',
+        defaultPath: `${downloads}/quark-qr.png`,
         filters: [{ name: 'PNG', extensions: ['png'] }],
       })
       if (!path) return
