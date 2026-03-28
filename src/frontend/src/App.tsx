@@ -4,12 +4,14 @@ import ExportPanel from './components/ExportPanel'
 import AboutDialog from './components/AboutDialog'
 import UpdateBanner from './components/UpdateBanner'
 import { useUpdater } from './hooks/useUpdater'
+import { useAppVersion } from './hooks/useAppVersion'
 import { useState } from 'react'
 
 export default function App() {
   const [url, setUrl] = useState('')
   const [showAbout, setShowAbout] = useState(false)
   const updateState = useUpdater()
+  const version = useAppVersion()
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
@@ -48,7 +50,7 @@ export default function App() {
 
       {/* Footer */}
       <footer className="text-center text-xs text-gray-700 py-3 border-t border-gray-900">
-        Quark v0.1 — AGPLv3
+        Quark v{version} — AGPLv3
       </footer>
     </div>
   )

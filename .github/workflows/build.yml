@@ -83,7 +83,9 @@ jobs:
         run: |
           echo "=== AppImage suchen ==="
           find "${GITHUB_WORKSPACE}/src-tauri/target" -name "*.AppImage" 2>/dev/null || echo "(keine AppImage gefunden)"
-          APPIMAGE=$(find "${GITHUB_WORKSPACE}/src-tauri/target" -name "*.AppImage" 2>/dev/null | head -1)
+          APPIMAGE=$(find "${GITHUB_WORKSPACE}/src-tauri/target/release/bundle/appimage" \
+                         "${GITHUB_WORKSPACE}/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage" \
+                         -name "*.AppImage" 2>/dev/null | head -1)
           if [ -z "$APPIMAGE" ]; then
             echo "Fehler: Kein AppImage gefunden"
             exit 1

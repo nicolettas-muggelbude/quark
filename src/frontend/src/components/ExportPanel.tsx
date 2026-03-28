@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import QRCodeStyling from 'qr-code-styling'
+import { save } from '@tauri-apps/plugin-dialog'
+import { writeFile } from '@tauri-apps/plugin-fs'
 
 interface Props {
   url: string
@@ -10,25 +12,42 @@ const SIZES = [256, 512, 1024] as const
 
 export default function ExportPanel({ url, disabled }: Props) {
   const [size, setSize] = useState<(typeof SIZES)[number]>(512)
+  const [exporting, setExporting] = useState(false)
 
   async function handleExport() {
-    const qr = new QRCodeStyling({
-      width: size,
-      height: size,
-      type: 'canvas',
-      data: url,
-      dotsOptions: { color: '#000000', type: 'square' },
-      backgroundOptions: { color: '#ffffff' },
-      qrOptions: { errorCorrectionLevel: 'M' },
-    })
-    await qr.download({ name: 'quark-qr', extension: 'png' })
+    if (disabled) return
+    setExporting(true)
+    try {
+      const qr = new QRCodeStyling({
+        width: size,
+        height: size,
+        type: 'canvas',
+        data: url,
+        dotsOptions: { color: '#000000', type: 'square' },
+        backgroundOptions: { color: '#ffffff' },
+        qrOptions: { errorCorrectionLevel: 'M' },
+      })
+
+      const blob = await qr.getRawData('png')
+      if (!blob) return
+
+      const path = await save({
+        defaultPath: 'quark-qr.png',
+        filters: [{ name: 'PNG', extensions: ['png'] }],
+      })
+      if (!path) return
+
+      const buffer = await (blob as Blob).arrayBuffer()
+      await writeFile(path, new Uint8Array(buffer))
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
     <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 flex flex-col gap-3">
       <p className="text-sm font-medium text-gray-300">Export</p>
 
-      {/* Größenauswahl */}
       <div>
         <p className="text-xs text-gray-500 mb-2">Größe (px)</p>
         <div className="flex gap-2">
@@ -48,13 +67,12 @@ export default function ExportPanel({ url, disabled }: Props) {
         </div>
       </div>
 
-      {/* Export-Button */}
       <button
         onClick={handleExport}
-        disabled={disabled}
+        disabled={disabled || exporting}
         className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-gray-800 disabled:text-gray-600 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-colors cursor-pointer"
       >
-        PNG exportieren
+        {exporting ? 'Exportiere…' : 'PNG exportieren'}
       </button>
     </div>
   )

@@ -1,8 +1,12 @@
+import { useAppVersion } from '../hooks/useAppVersion'
+
 interface Props {
   onClose: () => void
 }
 
 export default function AboutDialog({ onClose }: Props) {
+  const version = useAppVersion()
+
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-center justify-center z-50"
@@ -16,7 +20,7 @@ export default function AboutDialog({ onClose }: Props) {
           <img src="/quark-frog.svg" alt="Quark" className="w-12 h-12" />
           <div>
             <h2 className="text-xl font-semibold text-white">Quark</h2>
-            <p className="text-xs text-gray-500">QR-Code-Generator v0.1</p>
+            <p className="text-xs text-gray-500">QR-Code-Generator v{version}</p>
           </div>
         </div>
 
