@@ -27,8 +27,15 @@ fi
 APPIMAGE="$(realpath "$APPIMAGE")"
 echo "AppImage: $APPIMAGE"
 
-# ── Ausführbar machen ──────────────────────────────────────────────────────────
-chmod +x "$APPIMAGE"
+# ── AppImage in stabilen Pfad installieren ─────────────────────────────────────
+INSTALL_DIR="$HOME/.local/bin"
+APPIMAGE_INSTALLED="$INSTALL_DIR/Quark.AppImage"
+mkdir -p "$INSTALL_DIR"
+cp -f "$APPIMAGE" "$APPIMAGE_INSTALLED"
+chmod +x "$APPIMAGE_INSTALLED"
+echo "AppImage installiert nach: $APPIMAGE_INSTALLED"
+APPIMAGE_ORIGINAL="$APPIMAGE"
+APPIMAGE="$APPIMAGE_INSTALLED"
 
 # ── Systemabhängigkeiten prüfen und ggf. reparieren ───────────────────────────
 check_and_fix_deps() {
@@ -261,3 +268,13 @@ echo ""
 echo "  Weißes Fenster? Reparatur ausführen mit:"
 echo "    ./install-linux.sh --repair"
 echo ""
+
+# ── Original-AppImage löschen? ─────────────────────────────────────────────────
+if [ "$APPIMAGE_ORIGINAL" != "$APPIMAGE_INSTALLED" ] && [ -f "$APPIMAGE_ORIGINAL" ]; then
+  printf "Original-Datei löschen? (%s) [j/N] " "$APPIMAGE_ORIGINAL"
+  read -r answer
+  if [[ "${answer:-n}" =~ ^[jJyY]$ ]]; then
+    rm -f "$APPIMAGE_ORIGINAL"
+    echo "  Gelöscht."
+  fi
+fi
