@@ -147,18 +147,19 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          $target = Join-Path $env:GITHUB_WORKSPACE "src-tauri\target"
-          Write-Host "Suche .exe.sig in: $target"
-          $sig = Get-ChildItem -Path $target -Recurse -Filter "*.exe.sig" | Select-Object -First 1
+          Write-Host "=== Suche *.exe.sig im gesamten Workspace ==="
+          $sig = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.exe.sig" -ErrorAction SilentlyContinue | Select-Object -First 1
           if (-not $sig) {
-            Write-Host "Alle Dateien in target\release\bundle:"
-            Get-ChildItem -Path (Join-Path $target "release\bundle") -Recurse | Select-Object FullName
+            Write-Host "=== Inhalt von src-tauri\target (1 Ebene) ==="
+            Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE "src-tauri\target") -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            Write-Host "=== Alle bundle-Verzeichnisse ==="
+            Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE "src-tauri\target") -Recurse -Filter "bundle" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
             Write-Error "Keine .exe.sig Datei gefunden"
             exit 1
           }
+          Write-Host "Signatur gefunden: $($sig.FullName)"
           New-Item -ItemType Directory -Force -Path "sig-out" | Out-Null
           Copy-Item $sig.FullName "sig-out\quark-windows.exe.sig"
-          Write-Host "Signatur gefunden: $($sig.FullName)"
 
       - name: Windows-Signatur als Artifact hochladen
         if: matrix.platform == 'windows-latest'
