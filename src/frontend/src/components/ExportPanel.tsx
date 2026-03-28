@@ -15,6 +15,7 @@ export default function ExportPanel({ url, disabled }: Props) {
   const [size, setSize] = useState<(typeof SIZES)[number]>(512)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastDir, setLastDir] = useState<string | null>(null)
 
   async function handleExport() {
     if (disabled) return
@@ -34,8 +35,8 @@ export default function ExportPanel({ url, disabled }: Props) {
       const blob = await qr.getRawData('png')
       if (!blob) throw new Error('QR-Daten konnten nicht generiert werden')
 
-      const downloads = await downloadDir()
-      const defaultPath = await join(downloads, 'quark-qr.png')
+      const baseDir = lastDir ?? await downloadDir()
+      const defaultPath = await join(baseDir, 'quark-qr.png')
       const path = await save({
         defaultPath,
         filters: [{ name: 'PNG', extensions: ['png'] }],
@@ -44,6 +45,11 @@ export default function ExportPanel({ url, disabled }: Props) {
 
       const buffer = await (blob as Blob).arrayBuffer()
       await writeFile(path, new Uint8Array(buffer))
+
+      // Letzten Ordner merken
+      const parts = path.replace(/\\/g, '/').split('/')
+      parts.pop()
+      setLastDir(parts.join('/') || '/')
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
