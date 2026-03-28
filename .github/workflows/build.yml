@@ -49,8 +49,7 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf \
-            minisign
+            patchelf
 
       - name: Install frontend dependencies
         run: cd src/frontend && npm ci
@@ -114,10 +113,10 @@ jobs:
           echo "AppImage neu gepackt: $(du -sh "$APPIMAGE" | cut -f1)"
 
           # ── AppImage neu signieren ────────────────────────────────────────────
-          echo "$TAURI_SIGNING_PRIVATE_KEY" | base64 -d > /tmp/tauri.key
-          printf "%s\n" "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
-            | minisign -S -s /tmp/tauri.key -m "$APPIMAGE" -t "signature from quark build"
-          rm -f /tmp/tauri.key
+          npm run tauri -- signer sign \
+            -k "$TAURI_SIGNING_PRIVATE_KEY" \
+            -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
+            "$APPIMAGE"
           echo "AppImage signiert: $APPIMAGE.sig"
 
           gh release upload "${{ github.ref_name }}" "$APPIMAGE" --clobber
