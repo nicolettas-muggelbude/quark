@@ -17,11 +17,9 @@ jobs:
       matrix:
         include:
           - platform: ubuntu-22.04
-            artifact: AppImage
-            ext: AppImage
+            target: x86_64-unknown-linux-gnu
           - platform: windows-latest
-            artifact: NSIS
-            ext: exe
+            target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.platform }}
 
@@ -35,6 +33,8 @@ jobs:
 
       - name: Rust setup
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -70,14 +70,14 @@ jobs:
             Quark QR-Generator ${{ github.ref_name }}
           releaseDraft: false
           prerelease: false
+          args: --target ${{ matrix.target }}
 
       # ── AppImage: gebündelte Bibliotheken entfernen ──────────────────────────
       # Problem: linuxdeploy bündelt webkit2gtk + GStreamer aus Ubuntu 22.04.
       # Auf neueren Distros (Fedora, Bazzite, Arch) kollidieren diese mit den
       # System-Bibliotheken → Absturz.
       # Fix: usr/lib/ komplett entfernen → System-Bibliotheken werden verwendet.
-      # Nach dem Umpacken wird das AppImage neu signiert, damit der Updater
-      # die Signatur verifizieren kann.
+      # Nach dem Umpacken: AppImage neu signieren → .tar.gz erstellen + signieren.
       - name: AppImage entbündeln, neu packen und signieren (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         env:
@@ -85,18 +85,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          echo "=== AppImage suchen ==="
-          find "${GITHUB_WORKSPACE}/src-tauri/target" -name "*.AppImage" 2>/dev/null || echo "(keine AppImage gefunden)"
-          APPIMAGE=$(find "${GITHUB_WORKSPACE}/src-tauri/target/release/bundle/appimage" \
-                         "${GITHUB_WORKSPACE}/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage" \
-                         -name "*.AppImage" 2>/dev/null | head -1)
-          if [ -z "$APPIMAGE" ]; then
-            echo "Fehler: Kein AppImage gefunden"
-            exit 1
-          fi
-          echo "AppImage gefunden: $APPIMAGE"
+          V="${{ github.ref_name }}"
+          V="${V#v}"
+          BASE="${GITHUB_WORKSPACE}/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage"
+          APPIMAGE="$BASE/Quark_${V}_amd64.AppImage"
           SQUASH="${GITHUB_WORKSPACE}/squashfs-root"
 
+          echo "=== AppImage entbündeln ==="
           chmod +x "$APPIMAGE"
           "$APPIMAGE" --appimage-extract
 
@@ -104,25 +99,43 @@ jobs:
           du -sh "$SQUASH/usr/lib/" 2>/dev/null || echo "(leer)"
 
           rm -rf "$SQUASH/usr/lib/"
-          echo "=== usr/lib/ entfernt – System-Bibliotheken werden verwendet ==="
+          echo "=== usr/lib/ entfernt ==="
 
           wget -qO /tmp/appimagetool \
             "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"
           chmod +x /tmp/appimagetool
           ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run "$SQUASH" "$APPIMAGE"
           echo "AppImage neu gepackt: $(du -sh "$APPIMAGE" | cut -f1)"
+          rm -rf "$SQUASH"
 
-          # ── AppImage neu signieren ────────────────────────────────────────────
-          npm run tauri -- signer sign \
-            -k "$TAURI_SIGNING_PRIVATE_KEY" \
-            -p "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
-            "$APPIMAGE"
-          echo "AppImage signiert: $APPIMAGE.sig"
+          # ── AppImage neu signieren ──────────────────────────────────────────
+          curl -sSL https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz \
+            | tar -xz --strip-components=2 -C /usr/local/bin minisign-linux/x86_64/minisign
+          chmod +x /usr/local/bin/minisign
 
+          # Key entschlüsseln (base64-kodiert oder raw)
+          KEYFILE=$(mktemp)
+          STRIPPED=$(echo "$TAURI_SIGNING_PRIVATE_KEY" | tr -d '[:space:]')
+          if echo "$STRIPPED" | base64 -d 2>/dev/null | grep -q "^untrusted comment:"; then
+            echo "$STRIPPED" | base64 -d > "$KEYFILE"
+          else
+            printf '%s' "$TAURI_SIGNING_PRIVATE_KEY" | sed 's/\\n/\n/g' > "$KEYFILE"
+          fi
+
+          # .tar.gz erstellen und signieren
+          TAR="${APPIMAGE}.tar.gz"
+          tar -czf "$TAR" -C "$BASE" "Quark_${V}_amd64.AppImage"
+          printf '%s\n' "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
+            | minisign -SHm "$TAR" -s "$KEYFILE" -x "${TAR}.sig"
+          rm -f "$KEYFILE"
+          echo "Signiert: ${TAR}.sig"
+
+          # AppImage + .tar.gz + .sig hochladen
           gh release upload "${{ github.ref_name }}" "$APPIMAGE" --clobber
+          gh release upload "${{ github.ref_name }}" "$TAR" "${TAR}.sig" --clobber
 
           # Versions-loses AppImage für stabilen Download-Link
-          APPIMAGE_NOVERSION="$(dirname "$APPIMAGE")/Quark_amd64.AppImage"
+          APPIMAGE_NOVERSION="$BASE/Quark_amd64.AppImage"
           cp "$APPIMAGE" "$APPIMAGE_NOVERSION"
           gh release upload "${{ github.ref_name }}" "$APPIMAGE_NOVERSION" --clobber
 
@@ -130,55 +143,70 @@ jobs:
           gh release upload "${{ github.ref_name }}" \
             "${GITHUB_WORKSPACE}/scripts/install-linux.sh" --clobber
 
-          rm -rf "$SQUASH"
-
-          # Signatur-Datei für publish-Job bereitstellen
-          echo "APPIMAGE_SIG=$APPIMAGE.sig" >> "$GITHUB_ENV"
-          echo "APPIMAGE_URL=https://github.com/nicolettas-muggelbude/quark/releases/download/${{ github.ref_name }}/$(basename "$APPIMAGE")" >> "$GITHUB_ENV"
-
-      - name: Linux-Signatur als Artifact hochladen
-        if: matrix.platform == 'ubuntu-22.04'
-        uses: actions/upload-artifact@v4
-        with:
-          name: linux-sig
-          path: ${{ env.APPIMAGE_SIG }}
-
-      - name: Windows-Signatur vorbereiten
+      # ── Windows: .nsis.zip + .sig hochladen ─────────────────────────────────
+      - name: Updater-ZIP und Signatur hochladen (Windows)
         if: matrix.platform == 'windows-latest'
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
-          Write-Host "=== Suche *.exe.sig im gesamten Workspace ==="
-          $sig = Get-ChildItem -Path $env:GITHUB_WORKSPACE -Recurse -Filter "*.exe.sig" -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $sig) {
-            Write-Host "=== Inhalt von src-tauri\target (1 Ebene) ==="
-            Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE "src-tauri\target") -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
-            Write-Host "=== Alle bundle-Verzeichnisse ==="
-            Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE "src-tauri\target") -Recurse -Filter "bundle" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
-            Write-Error "Keine .exe.sig Datei gefunden"
-            exit 1
+          $V = "${{ github.ref_name }}".TrimStart('v')
+          $base = "${{ github.workspace }}\src-tauri\target\x86_64-pc-windows-msvc\release\bundle\nsis"
+          $exe  = "$base\Quark_${V}_x64-setup.exe"
+          $zip  = "$base\Quark_${V}_x64-setup.nsis.zip"
+          $sig  = "${zip}.sig"
+
+          # .nsis.zip erstellen falls nicht vorhanden
+          if (-not (Test-Path $zip)) {
+            $exeName = Split-Path -Leaf $exe
+            python -c "import zipfile; zf = zipfile.ZipFile(r'$zip', 'w', zipfile.ZIP_STORED); zf.write(r'$exe', '$exeName'); zf.close()"
           }
-          Write-Host "Signatur gefunden: $($sig.FullName)"
-          New-Item -ItemType Directory -Force -Path "sig-out" | Out-Null
-          Copy-Item $sig.FullName "sig-out\quark-windows.exe.sig"
 
-      - name: Windows-Signatur als Artifact hochladen
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-sig
-          path: sig-out/quark-windows.exe.sig
+          # .sig erstellen falls nicht vorhanden
+          if (-not (Test-Path $sig)) {
+            Invoke-WebRequest -Uri "https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-win64.zip" `
+              -OutFile "$env:TEMP\minisign.zip"
+            Expand-Archive -Path "$env:TEMP\minisign.zip" -DestinationPath "$env:TEMP\minisign-bin" -Force
+            $minisign = "$env:TEMP\minisign-bin\minisign-win64\x86_64\minisign.exe"
 
-  # ── latest.json aus beiden Plattform-Signaturen zusammenbauen ───────────────
-  publish:
+            $keyContent = $env:TAURI_SIGNING_PRIVATE_KEY
+            $keyFile = [System.IO.Path]::GetTempFileName() + ".key"
+            $stripped = $keyContent -replace '[\s]', ''
+            try {
+              $decoded = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($stripped))
+              if ($decoded.StartsWith("untrusted comment:")) {
+                [System.IO.File]::WriteAllText($keyFile, $decoded)
+              } else { throw }
+            } catch {
+              [System.IO.File]::WriteAllText($keyFile, ($keyContent -replace '\\n', "`n"))
+            }
+
+            $env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD | & $minisign -SHm "$zip" -s "$keyFile" -x "$sig"
+            Remove-Item $keyFile -Force
+          }
+
+          gh release upload "${{ github.ref_name }}" "$zip" "$sig" --clobber
+
+  # ── latest.json aus Release-Signaturen zusammenbauen ────────────────────────
+  updater-json:
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Signaturen herunterladen
-        uses: actions/download-artifact@v4
-        with:
-          path: sigs
+      - name: Signaturen vom Release herunterladen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir sigs
+          gh release download "${{ github.ref_name }}" \
+            --pattern "*.sig" \
+            --dir sigs \
+            --repo "${{ github.repository }}"
+          echo "=== Heruntergeladene Signaturen ==="
+          ls -la sigs/
 
       - name: latest.json generieren und hochladen
         env:
@@ -186,33 +214,37 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
+          REPO="${{ github.repository }}"
+          BASE="https://github.com/${REPO}/releases/download/${TAG}"
 
-          LINUX_SIG=$(cat sigs/linux-sig/*.sig)
-          WINDOWS_SIG=$(cat sigs/windows-sig/*.sig)
+          python3 << PYEOF
+          import json, os, base64, datetime
 
-          jq -n \
-            --arg version "$VERSION" \
-            --arg linux_sig "$LINUX_SIG" \
-            --arg linux_url "https://github.com/nicolettas-muggelbude/quark/releases/download/${TAG}/Quark_${VERSION}_amd64.AppImage" \
-            --arg windows_sig "$WINDOWS_SIG" \
-            --arg windows_url "https://github.com/nicolettas-muggelbude/quark/releases/download/${TAG}/Quark_${VERSION}_x64-setup.exe" \
-            '{
-              version: $version,
-              notes: ("Quark " + $version),
-              pub_date: (now | todate),
-              platforms: {
-                "linux-x86_64": {
-                  signature: $linux_sig,
-                  url: $linux_url
-                },
-                "windows-x86_64": {
-                  signature: $windows_sig,
-                  url: $windows_url
-                }
-              }
-            }' > latest.json
+          v    = os.environ['VERSION']
+          tag  = os.environ['TAG']
+          base = os.environ['BASE']
 
-          echo "=== latest.json ==="
-          cat latest.json
+          def sig_b64(path):
+              return base64.b64encode(open(path, 'rb').read()).decode('ascii')
+
+          data = {
+            'version': v,
+            'notes': f'Quark {v}',
+            'pub_date': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'platforms': {
+              'linux-x86_64': {
+                'signature': sig_b64(f'sigs/Quark_{v}_amd64.AppImage.tar.gz.sig'),
+                'url': f'{base}/Quark_{v}_amd64.AppImage.tar.gz',
+              },
+              'windows-x86_64': {
+                'signature': sig_b64(f'sigs/Quark_{v}_x64-setup.nsis.zip.sig'),
+                'url': f'{base}/Quark_{v}_x64-setup.nsis.zip',
+              },
+            },
+          }
+          json.dump(data, open('latest.json', 'w'), indent=2)
+          print('latest.json generiert:')
+          print(json.dumps(data, indent=2))
+          PYEOF
 
           gh release upload "${TAG}" latest.json --clobber
