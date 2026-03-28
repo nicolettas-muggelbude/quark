@@ -3,15 +3,43 @@
 <img src="src/frontend/public/quark-frog.svg" width="140" alt="Quark Logo" />
 
 Quark ist ein kostenloser, werbefreier QR-Code-Generator als Desktop-App für Linux und Windows.
+Keine Cloud, kein Tracking, keine versteckten Kosten.
 
-## Features (v0.1)
+## Features
 - URL eingeben, QR-Code live vorschauen
 - PNG-Export in 256 / 512 / 1024 px
+- Letzten Speicherpfad merken
+- Automatische Updates beim App-Start
+
+## Download
+
+| Betriebssystem | Download |
+|---|---|
+| **Linux** | [Quark_amd64.AppImage](https://github.com/nicolettas-muggelbude/quark/releases/latest/download/Quark_amd64.AppImage) |
+| **Windows** | [Installer (.exe)](https://github.com/nicolettas-muggelbude/quark/releases/latest) |
+
+### Linux: Desktop-Integration (einmalig)
+
+Damit Quark im App-Menü erscheint und ans Dock geheftet werden kann:
+
+```bash
+# 1. AppImage ausführbar machen
+chmod +x Quark_amd64.AppImage
+
+# 2. Integrationsskript herunterladen und ausführen
+wget https://github.com/nicolettas-muggelbude/quark/releases/latest/download/install-linux.sh
+chmod +x install-linux.sh
+./install-linux.sh ./Quark_amd64.AppImage
+```
+
+Das Skript installiert das AppImage nach `~/.local/bin/Quark.AppImage`, legt einen `.desktop`-Eintrag für GNOME, KDE und XFCE an, prüft Systemabhängigkeiten und fragt ob die Original-Datei aus dem Download-Ordner gelöscht werden soll.
+
+Nach einem Auto-Update muss das Skript **nicht erneut** ausgeführt werden — der Updater ersetzt das AppImage direkt in `~/.local/bin/`.
 
 ## Geplante Features
 - Farben, Verläufe, Dot-Stile
 - Logo in QR einbetten
-- SVG / PDF Export
+- SVG Export
 - Rahmen + Text
 - Batch-Generierung
 
