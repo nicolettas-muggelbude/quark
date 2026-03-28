@@ -49,7 +49,8 @@ jobs:
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
-            patchelf
+            patchelf \
+            minisign
 
       - name: Install frontend dependencies
         run: cd src/frontend && npm ci
@@ -76,10 +77,14 @@ jobs:
       # Auf neueren Distros (Fedora, Bazzite, Arch) kollidieren diese mit den
       # System-Bibliotheken → Absturz.
       # Fix: usr/lib/ komplett entfernen → System-Bibliotheken werden verwendet.
-      - name: AppImage Bibliotheken entbündeln (Linux)
+      # Nach dem Umpacken wird das AppImage neu signiert, damit der Updater
+      # die Signatur verifizieren kann.
+      - name: AppImage entbündeln, neu packen und signieren (Linux)
         if: matrix.platform == 'ubuntu-22.04'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           echo "=== AppImage suchen ==="
           find "${GITHUB_WORKSPACE}/src-tauri/target" -name "*.AppImage" 2>/dev/null || echo "(keine AppImage gefunden)"
@@ -108,6 +113,13 @@ jobs:
           ARCH=x86_64 /tmp/appimagetool --appimage-extract-and-run "$SQUASH" "$APPIMAGE"
           echo "AppImage neu gepackt: $(du -sh "$APPIMAGE" | cut -f1)"
 
+          # ── AppImage neu signieren ────────────────────────────────────────────
+          echo "$TAURI_SIGNING_PRIVATE_KEY" | base64 -d > /tmp/tauri.key
+          printf "%s\n" "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" \
+            | minisign -S -s /tmp/tauri.key -m "$APPIMAGE" -t "signature from quark build"
+          rm -f /tmp/tauri.key
+          echo "AppImage signiert: $APPIMAGE.sig"
+
           gh release upload "${{ github.ref_name }}" "$APPIMAGE" --clobber
 
           # Versions-loses AppImage für stabilen Download-Link
@@ -120,3 +132,70 @@ jobs:
             "${GITHUB_WORKSPACE}/scripts/install-linux.sh" --clobber
 
           rm -rf "$SQUASH"
+
+          # Signatur-Datei für publish-Job bereitstellen
+          echo "APPIMAGE_SIG=$APPIMAGE.sig" >> "$GITHUB_ENV"
+          echo "APPIMAGE_URL=https://github.com/nicolettas-muggelbude/quark/releases/download/${{ github.ref_name }}/$(basename "$APPIMAGE")" >> "$GITHUB_ENV"
+
+      - name: Linux-Signatur als Artifact hochladen
+        if: matrix.platform == 'ubuntu-22.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-sig
+          path: ${{ env.APPIMAGE_SIG }}
+
+      - name: Windows-Signatur als Artifact hochladen
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-sig
+          path: src-tauri/target/release/bundle/nsis/*.exe.sig
+
+  # ── latest.json aus beiden Plattform-Signaturen zusammenbauen ───────────────
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Signaturen herunterladen
+        uses: actions/download-artifact@v4
+        with:
+          path: sigs
+
+      - name: latest.json generieren und hochladen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION="${TAG#v}"
+
+          LINUX_SIG=$(cat sigs/linux-sig/*.sig)
+          WINDOWS_SIG=$(cat sigs/windows-sig/*.sig)
+
+          jq -n \
+            --arg version "$VERSION" \
+            --arg linux_sig "$LINUX_SIG" \
+            --arg linux_url "https://github.com/nicolettas-muggelbude/quark/releases/download/${TAG}/Quark_${VERSION}_amd64.AppImage" \
+            --arg windows_sig "$WINDOWS_SIG" \
+            --arg windows_url "https://github.com/nicolettas-muggelbude/quark/releases/download/${TAG}/Quark_${VERSION}_x64-setup.exe" \
+            '{
+              version: $version,
+              notes: ("Quark " + $version),
+              pub_date: (now | todate),
+              platforms: {
+                "linux-x86_64": {
+                  signature: $linux_sig,
+                  url: $linux_url
+                },
+                "windows-x86_64": {
+                  signature: $windows_sig,
+                  url: $windows_url
+                }
+              }
+            }' > latest.json
+
+          echo "=== latest.json ==="
+          cat latest.json
+
+          gh release upload "${TAG}" latest.json --clobber
