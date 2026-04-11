@@ -7,7 +7,9 @@ Keine Cloud, kein Tracking, keine versteckten Kosten.
 
 ## Features
 - URL eingeben, QR-Code live vorschauen
-- PNG-Export in 256 / 512 / 1024 px
+- Punkt- und Hintergrundfarbe frei wählbar
+- Regenbogen-Farbverlauf
+- PNG-Export in 256 / 512 / 1024 px (mit gewählten Farben)
 - Letzten Speicherpfad merken
 - Automatische Updates beim App-Start
 
@@ -37,7 +39,8 @@ Das Skript installiert das AppImage nach `~/.local/bin/Quark.AppImage`, legt ein
 Nach einem Auto-Update muss das Skript **nicht erneut** ausgeführt werden — der Updater ersetzt das AppImage direkt in `~/.local/bin/`.
 
 ## Geplante Features
-- Farben, Verläufe, Dot-Stile
+- Dot-Stile (rund, eckig, klassisch …)
+- Farbverläufe (Gradient)
 - Logo in QR einbetten
 - SVG Export
 - Rahmen + Text

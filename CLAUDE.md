@@ -23,7 +23,8 @@ src-tauri/        Rust/Tauri Backend
 | Version | Features |
 |---------|----------|
 | v0.1 | URL → QR, PNG Export 256/512/1024px |
-| v0.2 | Farben, Dot-Stile |
-| v0.3 | SVG Export, Logo einbetten |
-| v0.4 | Rahmen + Text |
-| v0.5 | Batch-Generierung |
+| v0.2 ✓ | Farben (einfarbig + Regenbogen-Gradient), Clipboard-Einfügen |
+| v0.3 | Dot-Stile, weitere Farbverläufe |
+| v0.4 | SVG Export, Logo einbetten |
+| v0.5 | Rahmen + Text |
+| v0.6 | Batch-Generierung |
