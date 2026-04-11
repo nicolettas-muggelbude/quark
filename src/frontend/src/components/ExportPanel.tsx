@@ -3,15 +3,17 @@ import QRCodeStyling from 'qr-code-styling'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { downloadDir, join } from '@tauri-apps/api/path'
+import { buildQrConfig, type QrOptions } from '../types'
 
 interface Props {
   url: string
   disabled: boolean
+  qrOptions: QrOptions
 }
 
 const SIZES = [256, 512, 1024] as const
 
-export default function ExportPanel({ url, disabled }: Props) {
+export default function ExportPanel({ url, disabled, qrOptions }: Props) {
   const [size, setSize] = useState<(typeof SIZES)[number]>(512)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -27,9 +29,8 @@ export default function ExportPanel({ url, disabled }: Props) {
         height: size,
         type: 'canvas',
         data: url,
-        dotsOptions: { color: '#000000', type: 'square' },
-        backgroundOptions: { color: '#ffffff' },
         qrOptions: { errorCorrectionLevel: 'M' },
+        ...buildQrConfig(qrOptions),
       })
 
       const blob = await qr.getRawData('png')

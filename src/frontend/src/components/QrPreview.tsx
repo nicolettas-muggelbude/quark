@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react'
 import QRCodeStyling from 'qr-code-styling'
+import { buildQrConfig, type QrOptions } from '../types'
 
 interface Props {
   url: string
+  qrOptions: QrOptions
 }
 
-export default function QrPreview({ url }: Props) {
+export default function QrPreview({ url, qrOptions }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const qrRef = useRef<QRCodeStyling | null>(null)
 
@@ -15,16 +17,18 @@ export default function QrPreview({ url }: Props) {
         width: 300,
         height: 300,
         type: 'svg',
-        dotsOptions: { color: '#000000', type: 'square' },
-        backgroundOptions: { color: '#ffffff' },
         qrOptions: { errorCorrectionLevel: 'M' },
+        ...buildQrConfig(qrOptions),
       })
       if (containerRef.current) {
         qrRef.current.append(containerRef.current)
       }
     }
-    qrRef.current.update({ data: url || 'https://example.com' })
-  }, [url])
+    qrRef.current.update({
+      data: url || 'https://example.com',
+      ...buildQrConfig(qrOptions),
+    })
+  }, [url, qrOptions])
 
   return (
     <div className="flex flex-col items-center gap-4">

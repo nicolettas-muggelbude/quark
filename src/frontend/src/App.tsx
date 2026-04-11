@@ -1,15 +1,18 @@
 import QrPreview from './components/QrPreview'
 import UrlInput from './components/UrlInput'
 import ExportPanel from './components/ExportPanel'
+import ColorPanel from './components/ColorPanel'
 import AboutDialog from './components/AboutDialog'
 import UpdateBanner from './components/UpdateBanner'
 import { useUpdater } from './hooks/useUpdater'
 import { useAppVersion } from './hooks/useAppVersion'
 import { useState } from 'react'
+import { DEFAULT_QR_OPTIONS, type QrOptions } from './types'
 
 export default function App() {
   const [url, setUrl] = useState('')
   const [showAbout, setShowAbout] = useState(false)
+  const [qrOptions, setQrOptions] = useState<QrOptions>(DEFAULT_QR_OPTIONS)
   const updateState = useUpdater()
   const version = useAppVersion()
 
@@ -39,12 +42,13 @@ export default function App() {
         {/* Linke Spalte: Einstellungen */}
         <div className="flex flex-col gap-4 w-80 shrink-0">
           <UrlInput url={url} onChange={setUrl} />
-          <ExportPanel url={url} disabled={!url || !isValidUrl(url)} />
+          <ColorPanel options={qrOptions} onChange={setQrOptions} />
+          <ExportPanel url={url} disabled={!url || !isValidUrl(url)} qrOptions={qrOptions} />
         </div>
 
         {/* Rechte Spalte: Vorschau */}
         <div className="flex flex-1 items-center justify-center">
-          <QrPreview url={url} />
+          <QrPreview url={url} qrOptions={qrOptions} />
         </div>
       </main>
 
