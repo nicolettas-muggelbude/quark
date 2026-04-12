@@ -3,7 +3,7 @@ import QRCodeStyling from 'qr-code-styling'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { downloadDir, join } from '@tauri-apps/api/path'
-import { error as logError } from '@tauri-apps/plugin-log'
+import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
 import { buildQrConfig, type QrOptions } from '../types'
 
 interface Props {
@@ -18,12 +18,14 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
   const [size, setSize] = useState<(typeof SIZES)[number]>(512)
   const [exporting, setExporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [savedPath, setSavedPath] = useState<string | null>(null)
   const [lastDir, setLastDir] = useState<string | null>(null)
 
   async function handleExport() {
     if (disabled) return
     setExporting(true)
     setError(null)
+    setSavedPath(null)
     try {
       const qr = new QRCodeStyling({
         width: size,
@@ -39,27 +41,39 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
 
       const baseDir = lastDir ?? await downloadDir()
       const defaultPath = await join(baseDir, 'quark-qr.png')
-      const path = await save({
-        defaultPath,
-        filters: [{ name: 'PNG', extensions: ['png'] }],
-      })
+
+      let path: string | null = null
+      let fallback = false
+
+      try {
+        path = await save({
+          defaultPath,
+          filters: [{ name: 'PNG', extensions: ['png'] }],
+        })
+      } catch (dialogErr) {
+        const msg = dialogErr instanceof Error ? dialogErr.message : String(dialogErr)
+        logError(`[Export] Dialog-Fehler: ${msg}`)
+        path = defaultPath
+        fallback = true
+      }
+
       if (!path) return
 
       const buffer = await (blob as Blob).arrayBuffer()
       await writeFile(path, new Uint8Array(buffer))
+      logInfo(`[Export] Gespeichert: ${path}`)
 
-      // Letzten Ordner merken
-      const parts = path.replace(/\\/g, '/').split('/')
-      parts.pop()
-      setLastDir(parts.join('/') || '/')
+      if (fallback) {
+        setSavedPath(path)
+      } else {
+        const parts = path.replace(/\\/g, '/').split('/')
+        parts.pop()
+        setLastDir(parts.join('/') || '/')
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       logError(`[Export] Fehler: ${msg}`)
-      if (msg.toLowerCase().includes('unknown path') || msg.toLowerCase().includes('portal') || msg.toLowerCase().includes('dbus')) {
-        setError('Datei-Dialog konnte nicht geöffnet werden. Auf KDE Plasma wird xdg-desktop-portal-kde benötigt: sudo apt install xdg-desktop-portal-kde')
-      } else {
-        setError(msg)
-      }
+      setError(msg)
     } finally {
       setExporting(false)
     }
@@ -95,6 +109,12 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
       >
         {exporting ? 'Exportiere…' : 'PNG exportieren'}
       </button>
+
+      {savedPath && (
+        <p className="text-xs text-emerald-400 break-all">
+          Gespeichert nach {savedPath}
+        </p>
+      )}
 
       {error && (
         <p className="text-xs text-red-400 break-all">{error}</p>
