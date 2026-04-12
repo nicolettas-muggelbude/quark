@@ -2,7 +2,7 @@ import { useState } from 'react'
 import QRCodeStyling from 'qr-code-styling'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
-import { downloadDir, join } from '@tauri-apps/api/path'
+import { downloadDir, homeDir, join } from '@tauri-apps/api/path'
 import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
 import { buildQrConfig, type QrOptions } from '../types'
 
@@ -39,7 +39,12 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
       const blob = await qr.getRawData('png')
       if (!blob) throw new Error('QR-Daten konnten nicht generiert werden')
 
-      const baseDir = lastDir ?? await downloadDir()
+      let baseDir: string
+      try {
+        baseDir = lastDir ?? await downloadDir()
+      } catch {
+        baseDir = lastDir ?? await homeDir()
+      }
       const defaultPath = await join(baseDir, 'quark-qr.png')
 
       let path: string | null = null
