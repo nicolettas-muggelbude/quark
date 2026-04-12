@@ -38,6 +38,21 @@ Das Skript installiert das AppImage nach `~/.local/bin/Quark.AppImage`, legt ein
 
 Nach einem Auto-Update muss das Skript **nicht erneut** ausgeführt werden — der Updater ersetzt das AppImage direkt in `~/.local/bin/`.
 
+## FAQ
+
+**PNG-Export öffnet keinen Dialog auf KDE Plasma**
+
+Quark benötigt `xdg-desktop-portal-kde` für den Datei-Dialog. Auf manchen minimalen Debian/KDE-Installationen fehlt dieses Paket:
+
+```bash
+sudo apt install xdg-desktop-portal-kde
+systemctl --user restart xdg-desktop-portal
+```
+
+Danach Quark neu starten.
+
+---
+
 ## Geplante Features
 - Dot-Stile (rund, eckig, klassisch …)
 - Farbverläufe (Gradient)

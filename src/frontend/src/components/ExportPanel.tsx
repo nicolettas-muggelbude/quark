@@ -52,7 +52,12 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
       parts.pop()
       setLastDir(parts.join('/') || '/')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      const msg = e instanceof Error ? e.message : String(e)
+      if (msg.toLowerCase().includes('unknown path') || msg.toLowerCase().includes('portal') || msg.toLowerCase().includes('dbus')) {
+        setError('Datei-Dialog konnte nicht geöffnet werden. Auf KDE Plasma wird xdg-desktop-portal-kde benötigt: sudo apt install xdg-desktop-portal-kde')
+      } else {
+        setError(msg)
+      }
     } finally {
       setExporting(false)
     }
