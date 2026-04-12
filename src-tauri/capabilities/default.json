@@ -16,6 +16,8 @@
     "fs:scope-document-recursive",
     "fs:scope-desktop-recursive",
     "clipboard-manager:default",
-    "clipboard-manager:allow-read-text"
+    "clipboard-manager:allow-read-text",
+    "log:default",
+    "log:allow-log"
   ]
 }

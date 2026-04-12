@@ -5,9 +5,14 @@ interface Props {
 
 export default function UrlInput({ url, onChange }: Props) {
   async function paste() {
-    const { readText } = await import('@tauri-apps/plugin-clipboard-manager')
-    const text = await readText()
-    if (text) onChange(text.trim())
+    try {
+      const { readText } = await import('@tauri-apps/plugin-clipboard-manager')
+      const text = await readText()
+      if (text) onChange(text.trim())
+    } catch (e) {
+      const { error: logError } = await import('@tauri-apps/plugin-log')
+      logError(`[Clipboard] Fehler: ${e instanceof Error ? e.message : String(e)}`)
+    }
   }
 
   return (

@@ -3,6 +3,7 @@ import QRCodeStyling from 'qr-code-styling'
 import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { downloadDir, join } from '@tauri-apps/api/path'
+import { error as logError } from '@tauri-apps/plugin-log'
 import { buildQrConfig, type QrOptions } from '../types'
 
 interface Props {
@@ -53,6 +54,7 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
       setLastDir(parts.join('/') || '/')
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
+      logError(`[Export] Fehler: ${msg}`)
       if (msg.toLowerCase().includes('unknown path') || msg.toLowerCase().includes('portal') || msg.toLowerCase().includes('dbus')) {
         setError('Datei-Dialog konnte nicht geöffnet werden. Auf KDE Plasma wird xdg-desktop-portal-kde benötigt: sudo apt install xdg-desktop-portal-kde')
       } else {
