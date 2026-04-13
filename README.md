@@ -40,13 +40,17 @@ Nach einem Auto-Update muss das Skript **nicht erneut** ausgeführt werden — d
 
 ## FAQ
 
-**PNG-Export öffnet keinen Dialog auf KDE Plasma**
+**PNG-Export zeigt „unknown path" auf KDE Plasma**
 
-Quark benötigt `xdg-desktop-portal-kde` für den Datei-Dialog. Auf manchen minimalen Debian/KDE-Installationen fehlt dieses Paket:
+Auf manchen KDE-Systemen kann Quark den Download-Ordner nicht ermitteln. Ab v0.2.2 wird in diesem Fall automatisch auf den Home-Ordner zurückgefallen — der Export funktioniert dann trotzdem und zeigt den genauen Speicherpfad im UI an.
+
+Falls der Datei-Dialog gar nicht öffnet, kann zusätzlich `xdg-desktop-portal-kde` fehlen oder nicht laufen:
 
 ```bash
 sudo apt install xdg-desktop-portal-kde
-systemctl --user restart xdg-desktop-portal
+systemctl --user stop xdg-desktop-portal
+systemctl --user restart plasma-xdg-desktop-portal-kde
+systemctl --user start xdg-desktop-portal
 ```
 
 Danach Quark neu starten.
