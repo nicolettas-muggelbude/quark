@@ -29,7 +29,10 @@ pub fn run() {
                 // GDK_BACKEND=x11 und WAYLAND_DISPLAY-Remove sind in main.rs
                 // (müssen vor GTK-Init gesetzt sein, nicht erst hier in setup())
                 std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
-                log::info!("WebKit-EGL-Fix aktiviert");
+                // webkit2gtk 2.46+ (Ubuntu 26.04) führt separaten Compositing-Prozess ein
+                // der auf manchen Systemen crasht → WEBKIT_DISABLE_COMPOSITING_MODE=1 behebt das
+                std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+                log::info!("GDK_BACKEND=x11 + WEBKIT_DISABLE_DMABUF_RENDERER=1 + WEBKIT_DISABLE_COMPOSITING_MODE=1 gesetzt");
             }
 
             let main_window = tauri::WebviewWindowBuilder::new(
