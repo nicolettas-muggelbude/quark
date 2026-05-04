@@ -1,5 +1,6 @@
 import type { QrOptions } from '../types'
 import ColorPicker from './ColorPicker'
+import CollapsibleCard from './CollapsibleCard'
 
 interface Props {
   options: QrOptions
@@ -8,9 +9,7 @@ interface Props {
 
 export default function ColorPanel({ options, onChange }: Props) {
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 flex flex-col gap-3">
-      <p className="text-sm font-medium text-gray-300">Farben</p>
-
+    <CollapsibleCard title="Farben">
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Punkte</span>
@@ -20,7 +19,6 @@ export default function ColorPanel({ options, onChange }: Props) {
             disabled={options.rainbow}
           />
         </div>
-
         <div className="flex items-center justify-between">
           <span className="text-xs text-gray-500">Hintergrund</span>
           <ColorPicker
@@ -29,7 +27,6 @@ export default function ColorPanel({ options, onChange }: Props) {
           />
         </div>
       </div>
-
       <button
         onClick={() => onChange({ ...options, rainbow: !options.rainbow })}
         style={
@@ -45,6 +42,6 @@ export default function ColorPanel({ options, onChange }: Props) {
       >
         Regenbogen
       </button>
-    </div>
+    </CollapsibleCard>
   )
 }

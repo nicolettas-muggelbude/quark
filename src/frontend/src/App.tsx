@@ -2,6 +2,7 @@ import QrPreview from './components/QrPreview'
 import UrlInput from './components/UrlInput'
 import ExportPanel from './components/ExportPanel'
 import ColorPanel from './components/ColorPanel'
+import LabelPanel from './components/LabelPanel'
 import AboutDialog from './components/AboutDialog'
 import UpdateBanner from './components/UpdateBanner'
 import { useUpdater } from './hooks/useUpdater'
@@ -17,7 +18,7 @@ export default function App() {
   const version = useAppVersion()
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
+    <div className="h-screen bg-gray-950 text-gray-100 flex flex-col">
       {/* Header */}
       <header className="flex items-center gap-3 px-6 py-4 border-b border-gray-800">
         <img src="/quark-frog.svg" alt="Quark" className="w-8 h-8 select-none" />
@@ -38,11 +39,15 @@ export default function App() {
       {showAbout && <AboutDialog onClose={() => setShowAbout(false)} />}
 
       {/* Main */}
-      <main className="flex flex-1 gap-6 p-10 pt-8">
+      <main className="flex flex-1 gap-6 p-10 pt-8 overflow-hidden">
         {/* Linke Spalte: Einstellungen */}
-        <div className="flex flex-col gap-4 w-80 shrink-0">
+        <div
+          className="flex flex-col gap-4 w-80 shrink-0 overflow-y-auto pr-1"
+          onWheel={e => { e.currentTarget.scrollTop += e.deltaY }}
+        >
           <UrlInput url={url} onChange={setUrl} />
           <ColorPanel options={qrOptions} onChange={setQrOptions} />
+          <LabelPanel options={qrOptions} onChange={setQrOptions} />
           <ExportPanel url={url} disabled={!url || !isValidUrl(url)} qrOptions={qrOptions} />
         </div>
 

@@ -1,6 +1,6 @@
 [package]
 name = "quark"
-version = "0.2.3"
+version = "0.3.0"
 description = "Quark – QR-Code-Generator"
 authors = []
 license = "AGPL-3.0"

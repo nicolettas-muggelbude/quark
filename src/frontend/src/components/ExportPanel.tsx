@@ -4,7 +4,8 @@ import { save } from '@tauri-apps/plugin-dialog'
 import { writeFile } from '@tauri-apps/plugin-fs'
 import { downloadDir, homeDir, join } from '@tauri-apps/api/path'
 import { error as logError, info as logInfo } from '@tauri-apps/plugin-log'
-import { buildQrConfig, type QrOptions } from '../types'
+import { buildQrConfig, LABEL_FONT_CSS, type QrOptions } from '../types'
+import CollapsibleCard from './CollapsibleCard'
 
 interface Props {
   url: string
@@ -13,6 +14,20 @@ interface Props {
 }
 
 const SIZES = [256, 512, 1024] as const
+
+/** Passt die Schriftgröße per measureText an die verfügbare Breite an. */
+function fitFontSize(ctx: CanvasRenderingContext2D, text: string, fontBase: string, qrPx: number): number {
+  const maxWidth = qrPx - 32
+  const maxSize = Math.round(qrPx * 0.09)
+  const minSize = Math.round(qrPx * 0.025)
+  let size = maxSize
+  while (size > minSize) {
+    ctx.font = `600 ${size}px ${fontBase}`
+    if (ctx.measureText(text).width <= maxWidth) break
+    size--
+  }
+  return size
+}
 
 export default function ExportPanel({ url, disabled, qrOptions }: Props) {
   const [size, setSize] = useState<(typeof SIZES)[number]>(512)
@@ -36,8 +51,43 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
         ...buildQrConfig(qrOptions),
       })
 
-      const blob = await qr.getRawData('png')
+      let blob = await qr.getRawData('png')
       if (!blob) throw new Error('QR-Daten konnten nicht generiert werden')
+
+      if (qrOptions.label) {
+        const fontCSS = LABEL_FONT_CSS[qrOptions.labelFont]
+        const paddingV = Math.round(size * 0.035)
+
+        // Probe-Canvas nur für measureText
+        const probe = document.createElement('canvas')
+        const probeCtx = probe.getContext('2d')!
+        const fontSize = fitFontSize(probeCtx, qrOptions.label, fontCSS, size)
+        const labelHeight = fontSize + paddingV * 2
+
+        const img = new Image()
+        const objectUrl = URL.createObjectURL(blob as Blob)
+        await new Promise<void>(resolve => { img.onload = () => resolve(); img.src = objectUrl })
+        URL.revokeObjectURL(objectUrl)
+
+        const canvas = document.createElement('canvas')
+        canvas.width = size
+        canvas.height = size + labelHeight
+        const ctx = canvas.getContext('2d')!
+        ctx.fillStyle = qrOptions.bgColor
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        ctx.drawImage(img, 0, 0)
+        ctx.fillStyle = qrOptions.labelColor
+        ctx.font = `600 ${fontSize}px ${fontCSS}`
+        ctx.textAlign = qrOptions.labelAlign
+        ctx.textBaseline = 'middle'
+        const x = qrOptions.labelAlign === 'left'  ? 16
+                : qrOptions.labelAlign === 'right' ? size - 16
+                : size / 2
+        ctx.fillText(qrOptions.label, x, size + paddingV + fontSize / 2)
+
+        blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
+        if (!blob) throw new Error('Label-Composite fehlgeschlagen')
+      }
 
       let baseDir: string
       try {
@@ -85,13 +135,11 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 flex flex-col gap-3">
-      <p className="text-sm font-medium text-gray-300">Export</p>
-
+    <CollapsibleCard title="Export" defaultOpen>
       <div>
         <p className="text-xs text-gray-500 mb-2">Größe (px)</p>
         <div className="flex gap-2">
-          {SIZES.map((s) => (
+          {SIZES.map(s => (
             <button
               key={s}
               onClick={() => setSize(s)}
@@ -116,14 +164,11 @@ export default function ExportPanel({ url, disabled, qrOptions }: Props) {
       </button>
 
       {savedPath && (
-        <p className="text-xs text-emerald-400 break-all">
-          Gespeichert nach {savedPath}
-        </p>
+        <p className="text-xs text-emerald-400 break-all">Gespeichert nach {savedPath}</p>
       )}
-
       {error && (
         <p className="text-xs text-red-400 break-all">{error}</p>
       )}
-    </div>
+    </CollapsibleCard>
   )
 }
