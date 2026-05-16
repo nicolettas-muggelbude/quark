@@ -13,8 +13,12 @@ fn main() {
     // KDE Plasma hat immer XWayland → DISPLAY=:0 ist gesetzt.
     #[cfg(target_os = "linux")]
     {
-        std::env::set_var("GDK_BACKEND", "x11");
-        std::env::remove_var("WAYLAND_DISPLAY");
+        // In Flatpak: Wayland nativ nutzen — Runtime-Mesa hat den AMD/Mesa26-Bug nicht.
+        // Außerhalb Flatpak: WAYLAND_DISPLAY entfernen → X11-EGL-Pfad (Workaround AMD+Mesa26).
+        if std::env::var("FLATPAK_ID").is_err() {
+            std::env::set_var("GDK_BACKEND", "x11");
+            std::env::remove_var("WAYLAND_DISPLAY");
+        }
     }
 
     quark_lib::run();
