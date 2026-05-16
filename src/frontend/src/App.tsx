@@ -3,6 +3,7 @@ import UrlInput from './components/UrlInput'
 import ExportPanel from './components/ExportPanel'
 import ColorPanel from './components/ColorPanel'
 import LabelPanel from './components/LabelPanel'
+import FramePanel from './components/FramePanel'
 import AboutDialog from './components/AboutDialog'
 import UpdateBanner from './components/UpdateBanner'
 import { useUpdater } from './hooks/useUpdater'
@@ -48,6 +49,7 @@ export default function App() {
           <UrlInput url={url} onChange={setUrl} />
           <ColorPanel options={qrOptions} onChange={setQrOptions} />
           <LabelPanel options={qrOptions} onChange={setQrOptions} />
+          <FramePanel options={qrOptions} onChange={setQrOptions} />
           <ExportPanel url={url} disabled={!url || !isValidUrl(url)} qrOptions={qrOptions} />
         </div>
 

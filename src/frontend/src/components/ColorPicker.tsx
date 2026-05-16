@@ -9,10 +9,18 @@ interface Props {
 
 export default function ColorPicker({ color, onChange, disabled }: Props) {
   const [open, setOpen] = useState(false)
+  const [alignLeft, setAlignLeft] = useState(false)
+  const [alignTop, setAlignTop] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const btnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!open) return
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setAlignLeft(rect.left < window.innerWidth / 2)
+      setAlignTop(rect.top > window.innerHeight / 2)
+    }
     function onMouseDown(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false)
@@ -25,6 +33,7 @@ export default function ColorPicker({ color, onChange, disabled }: Props) {
   return (
     <div ref={ref} className="relative">
       <button
+        ref={btnRef}
         onClick={() => { if (!disabled) setOpen(o => !o) }}
         disabled={disabled}
         style={{ backgroundColor: color }}
@@ -33,7 +42,7 @@ export default function ColorPicker({ color, onChange, disabled }: Props) {
         }`}
       />
       {open && (
-        <div className="absolute right-0 top-10 z-50 bg-gray-900 rounded-xl p-3 border border-gray-700 shadow-2xl flex flex-col gap-2">
+        <div className={`absolute z-50 bg-gray-900 rounded-xl p-3 border border-gray-700 shadow-2xl flex flex-col gap-2 ${alignLeft ? 'left-0' : 'right-0'} ${alignTop ? 'bottom-10' : 'top-10'}`}>
           <HexColorPicker color={color} onChange={onChange} />
           <div className="flex items-center gap-1.5 bg-gray-800 rounded-lg border border-gray-700 px-2 py-1">
             <span className="text-xs text-gray-500 select-none">#</span>

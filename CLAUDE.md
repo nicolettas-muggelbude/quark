@@ -34,13 +34,29 @@ src-tauri/        Rust/Tauri Backend
 - Vorschau: CSS-`fontSize` aus `autoLabelFontSize(label, 300)`
 - Export: QR-PNG + Label auf neuem Canvas zusammengesetzt (Höhe = QR + Label-Bereich)
 
+## Rahmen-Feature (Frame)
+- `QrOptions.frame: FrameOptions` in `types.ts`
+- Stile: `none | simple | corners | badge-top | badge-bottom`
+  - `corners`: einheitlicher Stil, Radius-Slider (0 = eckig, 20 = abgerundet) — kein separater corners-square/corners-round
+- Felder: `color`, `width` (1–10), `radius` (0–20, alle Stile außer none), `innerPad` (eng/weit), `text` + `textColor` (nur badge)
+- Vorschau: CSS-Border + absolute Div-Ecken (corners) bzw. border + Badge-Div (simple/badge)
+  - QR immer 300px — Rahmen/Ecken wachsen nach außen
+  - Gap-Werte: `eng=10`, `weit=24` (px, bei 300px QR)
+- Export: Canvas-Clipping für Rundungen, `drawRoundRect()` Hilfsfunktion, Corner-L-Shapes per ctx.stroke()
+  - Canvas = immer exakt gewählte Größe (256/512/1024px), QR+Rahmen proportional skaliert
+  - Gap-Rohwerte (bei 300px Referenz): `eng=15`, `weit=16`
+  - `scale = size / totalW_prev` — totalW_prev berechnet aus Rahmenstil + gap_raw + fw_raw
+- Label bleibt immer INNERHALB des Rahmens (unter dem QR, über dem Badge bei badge-bottom)
+- `fitFontSize()` wird auch für Badge-Text genutzt
+
 ## Versionsplanung
 | Version | Features |
 |---------|----------|
 | v0.1 | URL → QR, PNG Export 256/512/1024px |
 | v0.2 ✓ | Farben (einfarbig + Regenbogen-Gradient), Clipboard-Einfügen |
 | v0.2.4 ✓ | Text-Label unter QR (Schrift, Ausrichtung, Farbe, Auto-Größe), aufklappbare Panels |
-| v0.3 | Dot-Stile, weitere Farbverläufe |
-| v0.4 | SVG Export, Logo einbetten |
-| v0.5 | Rahmen |
-| v0.6 | Batch-Generierung |
+| v0.3 ✓ | Rahmen (Rand, Ecken eckig/rund, Badge oben/unten) |
+| v1.0 ✓ | Stabiler Release: Export pixelidentisch zur Vorschau, Gap-Feinabstimmung |
+| v1.1 | Dot-Stile, weitere Farbverläufe |
+| v1.2 | SVG Export, Logo einbetten |
+| v1.3 | Batch-Generierung |

@@ -2,6 +2,29 @@ import type { Options } from 'qr-code-styling'
 
 export type LabelFont  = 'sans' | 'serif' | 'mono'
 export type LabelAlign = 'left' | 'center' | 'right'
+export type FrameStyle = 'none' | 'simple' | 'corners' | 'badge-top' | 'badge-bottom'
+
+export type InnerPad = 'klein' | 'gross'
+
+export interface FrameOptions {
+  style: FrameStyle
+  color: string
+  width: number     // 1–10
+  radius: number    // 0–20, Eckenradius für simple/badge
+  text: string      // Badge-Text
+  textColor: string
+  innerPad: InnerPad
+}
+
+export const DEFAULT_FRAME_OPTIONS: FrameOptions = {
+  style: 'none',
+  color: '#10b981',
+  width: 5,
+  radius: 5,
+  text: 'Scan Me',
+  textColor: '#ffffff',
+  innerPad: 'gross',
+}
 
 export interface QrOptions {
   dotColor: string
@@ -11,6 +34,7 @@ export interface QrOptions {
   labelColor: string
   labelFont: LabelFont
   labelAlign: LabelAlign
+  frame: FrameOptions
 }
 
 export const DEFAULT_QR_OPTIONS: QrOptions = {
@@ -21,6 +45,7 @@ export const DEFAULT_QR_OPTIONS: QrOptions = {
   labelColor: '#000000',
   labelFont: 'sans',
   labelAlign: 'center',
+  frame: DEFAULT_FRAME_OPTIONS,
 }
 
 export const LABEL_FONT_CSS: Record<LabelFont, string> = {
